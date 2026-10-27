@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/lostiq/static/css/main.e6c13ad2.css",
+    "main.js": "/lostiq/static/js/main.25c72696.js",
+    "static/js/453.4534cf0a.chunk.js": "/lostiq/static/js/453.4534cf0a.chunk.js",
+    "index.html": "/lostiq/index.html",
+    "main.e6c13ad2.css.map": "/lostiq/static/css/main.e6c13ad2.css.map",
+    "main.25c72696.js.map": "/lostiq/static/js/main.25c72696.js.map",
+    "453.4534cf0a.chunk.js.map": "/lostiq/static/js/453.4534cf0a.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.e6c13ad2.css",
+    "static/js/main.25c72696.js"
+  ]
+}
