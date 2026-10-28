@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/aircooler/static/css/main.e6c13ad2.css",
-    "main.js": "/aircooler/static/js/main.fca0f882.js",
+    "main.js": "/aircooler/static/js/main.5a29dd7f.js",
     "static/js/453.9ee68253.chunk.js": "/aircooler/static/js/453.9ee68253.chunk.js",
     "index.html": "/aircooler/index.html",
     "main.e6c13ad2.css.map": "/aircooler/static/css/main.e6c13ad2.css.map",
-    "main.fca0f882.js.map": "/aircooler/static/js/main.fca0f882.js.map",
+    "main.5a29dd7f.js.map": "/aircooler/static/js/main.5a29dd7f.js.map",
     "453.9ee68253.chunk.js.map": "/aircooler/static/js/453.9ee68253.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.e6c13ad2.css",
-    "static/js/main.fca0f882.js"
+    "static/js/main.5a29dd7f.js"
   ]
 }
