@@ -4,7 +4,8 @@ import {
   getAuth, 
   signInWithEmailAndPassword, 
   signOut, 
-  onAuthStateChanged 
+  onAuthStateChanged,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 import { 
   getDatabase, 
@@ -33,7 +34,8 @@ import {
   FileText,
   Clock,
   PieChart as PieIcon,
-  Sparkles
+  ArrowLeft,
+  KeyRound
 } from 'lucide-react';
 
 const getEnv = (key, fallback) => {
@@ -74,6 +76,12 @@ export default function App() {
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [loginSubmitting, setLoginSubmitting] = useState(false);
+
+  // Forgot Password States
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetStatus, setResetStatus] = useState({ type: '', message: '' });
+  const [resetSubmitting, setResetSubmitting] = useState(false);
 
   // Navigation State
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -195,6 +203,31 @@ export default function App() {
     }
   };
 
+  const handlePasswordReset = async (e) => {
+    e.preventDefault();
+    setResetStatus({ type: '', message: '' });
+    setResetSubmitting(true);
+    try {
+      await sendPasswordResetEmail(auth, resetEmail);
+      setResetStatus({
+        type: 'success',
+        message: 'Password reset link sent! Check your inbox or spam folder.'
+      });
+      setTimeout(() => {
+        setShowForgotPassword(false);
+        setResetStatus({ type: '', message: '' });
+        setResetEmail('');
+      }, 4000);
+    } catch (err) {
+      setResetStatus({
+        type: 'error',
+        message: err.message || 'Failed to send reset link. Ensure the email is registered.'
+      });
+    } finally {
+      setResetSubmitting(false);
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -239,9 +272,9 @@ export default function App() {
     const circumference = 2 * Math.PI * 36;
     const strokeDasharray = `${(current / maxTemp) * circumference} ${circumference}`;
 
-    let color = '#10b981'; // cool/green
-    if (current > 32) color = '#f43f5e'; // hot/rose
-    else if (current > 27) color = '#f59e0b'; // warm/amber
+    let color = '#10b981';
+    if (current > 32) color = '#f43f5e';
+    else if (current > 27) color = '#f59e0b';
 
     return {
       current,
@@ -263,9 +296,9 @@ export default function App() {
     const circumference = 2 * Math.PI * 36;
     const strokeDasharray = `${(current / maxHum) * circumference} ${circumference}`;
 
-    let color = '#06b6d4'; // normal cyan
-    if (current > 85) color = '#3b82f6'; // saturated deep blue
-    else if (current < 40) color = '#eab308'; // dry yellow
+    let color = '#06b6d4';
+    if (current > 85) color = '#3b82f6';
+    else if (current < 40) color = '#eab308';
 
     return {
       current,
@@ -343,67 +376,151 @@ export default function App() {
         <div className="max-w-md w-full bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-cyan-950/30">
           <div className="flex flex-col items-center text-center mb-8">
             <div className="w-14 h-14 rounded-2xl bg-cyan-700/80 border border-cyan-400/40 flex items-center justify-center shadow-lg shadow-cyan-950/50 mb-3">
-              <Wind size={30} className="text-white" />
+              {showForgotPassword ? <KeyRound size={28} className="text-white" /> : <Wind size={30} className="text-white" />}
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-1">
               <span>AIR COOLER</span><span className="text-cyan-400 font-extrabold">IOT</span>
             </h1>
-            <p className="text-xs text-slate-400 mt-1">Real-Time DHT22 Climate Telemetry</p>
+            <p className="text-xs text-slate-400 mt-1">
+              {showForgotPassword ? 'Reset Operator Credentials' : 'Real-Time DHT22 Climate Telemetry'}
+            </p>
           </div>
 
-          {loginError && (
-            <div className="p-3.5 mb-5 bg-rose-950/60 border border-rose-800 rounded-2xl text-rose-300 text-xs flex items-start gap-2.5">
-              <AlertTriangle size={16} className="shrink-0 mt-0.5 text-rose-400" />
-              <span>{loginError}</span>
+          {/* FORGOT PASSWORD VIEW */}
+          {showForgotPassword ? (
+            <div>
+              {resetStatus.message && (
+                <div
+                  className={`p-3.5 mb-5 rounded-2xl text-xs flex items-start gap-2.5 ${
+                    resetStatus.type === 'success'
+                      ? 'bg-emerald-950/60 border border-emerald-800 text-emerald-300'
+                      : 'bg-rose-950/60 border border-rose-800 text-rose-300'
+                  }`}
+                >
+                  {resetStatus.type === 'success' ? (
+                    <CheckCircle2 size={16} className="shrink-0 mt-0.5 text-emerald-400" />
+                  ) : (
+                    <AlertTriangle size={16} className="shrink-0 mt-0.5 text-rose-400" />
+                  )}
+                  <span>{resetStatus.message}</span>
+                </div>
+              )}
+
+              <form onSubmit={handlePasswordReset} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">Registered Email</label>
+                  <div className="relative">
+                    <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <input
+                      type="email"
+                      required
+                      placeholder="admin@cooler.com"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-950/60 border border-slate-700 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={resetSubmitting}
+                  className="w-full mt-2 py-2.5 bg-cyan-600 hover:bg-cyan-500 active:bg-cyan-700 text-white text-xs font-bold rounded-xl shadow-lg shadow-cyan-950/50 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {resetSubmitting ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Sending Reset Link...</span>
+                    </>
+                  ) : (
+                    <span>Send Password Reset Email</span>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForgotPassword(false);
+                    setResetStatus({ type: '', message: '' });
+                  }}
+                  className="w-full py-2 bg-slate-800/80 hover:bg-slate-800 text-slate-300 text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1.5"
+                >
+                  <ArrowLeft size={14} />
+                  <span>Back to Sign In</span>
+                </button>
+              </form>
+            </div>
+          ) : (
+            /* STANDARD LOGIN VIEW */
+            <div>
+              {loginError && (
+                <div className="p-3.5 mb-5 bg-rose-950/60 border border-rose-800 rounded-2xl text-rose-300 text-xs flex items-start gap-2.5">
+                  <AlertTriangle size={16} className="shrink-0 mt-0.5 text-rose-400" />
+                  <span>{loginError}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">Operator Email Address</label>
+                  <div className="relative">
+                    <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <input
+                      type="email"
+                      required
+                      placeholder="admin@cooler.com"
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-950/60 border border-slate-700 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-300">Password</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowForgotPassword(true);
+                        setResetEmail(loginEmail);
+                        setLoginError('');
+                      }}
+                      className="text-[11px] text-cyan-400 hover:text-cyan-300 font-semibold transition"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <input
+                      type="password"
+                      required
+                      placeholder="••••••••"
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-950/60 border border-slate-700 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition font-mono"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loginSubmitting}
+                  className="w-full mt-2 py-2.5 bg-cyan-600 hover:bg-cyan-500 active:bg-cyan-700 text-white text-xs font-bold rounded-xl shadow-lg shadow-cyan-950/50 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {loginSubmitting ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Signing In...</span>
+                    </>
+                  ) : (
+                    <span>Access Monitor Portal</span>
+                  )}
+                </button>
+              </form>
             </div>
           )}
-
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Operator Email Address</label>
-              <div className="relative">
-                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
-                <input
-                  type="email"
-                  required
-                  placeholder="admin@cooler.com"
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-950/60 border border-slate-700 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Password</label>
-              <div className="relative">
-                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
-                <input
-                  type="password"
-                  required
-                  placeholder="••••••••"
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-950/60 border border-slate-700 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition font-mono"
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loginSubmitting}
-              className="w-full mt-2 py-2.5 bg-cyan-600 hover:bg-cyan-500 active:bg-cyan-700 text-white text-xs font-bold rounded-xl shadow-lg shadow-cyan-950/50 transition disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {loginSubmitting ? (
-                <>
-                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Signing In...</span>
-                </>
-              ) : (
-                <span>Access Monitor Portal</span>
-              )}
-            </button>
-          </form>
 
           <div className="mt-6 pt-5 border-t border-slate-800 text-center">
             <p className="text-[11px] text-slate-500">
@@ -638,10 +755,8 @@ export default function App() {
                   </div>
 
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-6 py-6">
-                    {/* SVG Pie Chart for Temperature */}
                     <div className="relative w-40 h-40 shrink-0 flex items-center justify-center">
                       <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                        {/* Background track */}
                         <circle
                           cx="50"
                           cy="50"
@@ -650,7 +765,6 @@ export default function App() {
                           stroke="#f1f5f9"
                           strokeWidth="15"
                         />
-                        {/* Active Temperature Arc */}
                         <circle
                           cx="50"
                           cy="50"
@@ -665,7 +779,6 @@ export default function App() {
                         />
                       </svg>
 
-                      {/* Center Reading */}
                       <div className="absolute inset-0 flex flex-col items-center justify-center text-center select-none pointer-events-none">
                         <span className="text-2xl font-black text-slate-900 leading-tight font-mono">
                           {sensorData.temperature}°
@@ -676,7 +789,6 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* Temperature Legend & Proportions */}
                     <div className="flex-1 w-full space-y-2.5">
                       <div className="flex items-center justify-between text-xs p-2 rounded-xl bg-slate-50 border border-slate-100">
                         <span className="flex items-center gap-2 font-medium text-slate-700">
@@ -724,10 +836,8 @@ export default function App() {
                   </div>
 
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-6 py-6">
-                    {/* SVG Pie Chart for Humidity */}
                     <div className="relative w-40 h-40 shrink-0 flex items-center justify-center">
                       <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                        {/* Background track */}
                         <circle
                           cx="50"
                           cy="50"
@@ -736,7 +846,6 @@ export default function App() {
                           stroke="#f1f5f9"
                           strokeWidth="15"
                         />
-                        {/* Active Humidity Arc */}
                         <circle
                           cx="50"
                           cy="50"
@@ -751,7 +860,6 @@ export default function App() {
                         />
                       </svg>
 
-                      {/* Center Reading */}
                       <div className="absolute inset-0 flex flex-col items-center justify-center text-center select-none pointer-events-none">
                         <span className="text-2xl font-black text-slate-900 leading-tight font-mono">
                           {sensorData.humidity}%
@@ -762,7 +870,6 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* Humidity Legend & Proportions */}
                     <div className="flex-1 w-full space-y-2.5">
                       <div className="flex items-center justify-between text-xs p-2 rounded-xl bg-slate-50 border border-slate-100">
                         <span className="flex items-center gap-2 font-medium text-slate-700">
